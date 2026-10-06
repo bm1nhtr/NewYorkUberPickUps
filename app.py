@@ -461,6 +461,7 @@ def main():
 
     st.sidebar.markdown("### April, one city")
     st.sidebar.caption("Supervised by Mano Joseph MATHEW")
+    st.sidebar.caption("mano.mathew@efrei.fr")
     st.sidebar.caption("Uber New York · April 2014")
     st.sidebar.markdown(
         "\n".join(
@@ -483,7 +484,9 @@ def main():
     st.title("One month of Uber in New York")
     st.markdown(
         """
-        <p class="lede">This project is supervised by <b>Mano Joseph MATHEW</b>.</p>
+        <p class="lede">This project is supervised by <b>Mano Joseph MATHEW</b> —
+        <a href="mailto:mano.mathew@efrei.fr">mano.mathew@efrei.fr</a> ·
+        <a href="https://www.linkedin.com/in/manomathew/">LinkedIn</a>.</p>
         """,
         unsafe_allow_html=True,
     )
