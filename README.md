@@ -28,6 +28,8 @@ make run
 
 The app opens at http://localhost:8501.
 
+The published page is this same folder on Streamlit Community Cloud. A GitHub Codespace is not required, and this repository does not include a dev container.
+
 ## Dependencies
 
 `requirements.txt` pins the libraries this project imports: Streamlit, pandas, NumPy, Matplotlib, Seaborn, missingno, and pydeck. pyarrow, plotly, altair, and requests are not used.
