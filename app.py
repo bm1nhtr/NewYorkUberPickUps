@@ -1,5 +1,6 @@
 """Streamlit story of Uber pickups in New York, April 2014."""
 
+import textwrap
 from io import BytesIO
 from pathlib import Path
 
@@ -331,6 +332,11 @@ def caption(text):
     st.markdown(f'<p class="caption">{text}</p>', unsafe_allow_html=True)
 
 
+def cell(code):
+    st.markdown('<p class="cell-prompt">Notebook</p>', unsafe_allow_html=True)
+    st.code(textwrap.dedent(code).strip(), language="python")
+
+
 PRESETS = {
     "All month": (list(range(7)), (0, 23)),
     "Weekday rush": ([0, 1, 2, 3, 4], (16, 19)),
@@ -454,6 +460,11 @@ def main():
             color: #44403c; font-size: .95rem; line-height: 1.55;
             border-left: 3px solid #c2410c; padding-left: .8rem; margin: .15rem 0 1.4rem;
         }
+        .cell-prompt {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: .75rem; letter-spacing: .12em; text-transform: uppercase;
+            color: #9a3412; font-weight: 650; margin: 1.1rem 0 .15rem;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -466,6 +477,7 @@ def main():
     st.sidebar.markdown(
         "\n".join(
             [
+                "Before you start",
                 "Play with the map",
                 "1. A complete table",
                 "2. Day of the month",
@@ -494,6 +506,22 @@ def main():
         "It reads one month of Uber pickups in New York and turns that table into a map of time and place: "
         "when people called a car, and where they were standing."
     )
+
+    section("Before you start", "This project uses Python")
+    story(
+        "The analysis is written in Python: pandas for the table, Matplotlib and Seaborn for the charts, "
+        "and Streamlit for this page. "
+        "Run the cell below once, in a Jupyter notebook, before the first chart. "
+        "It installs the same libraries listed in <code>requirements.txt</code>."
+    )
+    cell(
+        """
+        # Run this cell once, before loading the data or drawing any chart.
+        %pip install streamlit==1.65.0 pandas==2.2.2 numpy==1.24.3 \
+            matplotlib==3.8.4 seaborn==0.13.2 missingno==0.5.2 pydeck==0.9.3
+        """
+    )
+    caption("From a terminal, the same step is python -m pip install -r requirements.txt.")
 
     section("The dataset", "A Freedom of Information release")
     story(
@@ -545,6 +573,31 @@ def main():
         "From Date/Time, the columns <code>day</code>, <code>weekday</code>, and <code>hour</code> are extracted, "
         "and every chart below counts the rows in each group."
     )
+    cell(
+        """
+        import pandas as pd
+        import missingno as msno
+
+        df = pd.read_csv("uber-raw-data-apr14.csv")
+        df["Date/Time"] = pd.to_datetime(df["Date/Time"])
+
+        def get_dom(dt):
+            return dt.day
+
+        def get_weekday(dt):
+            return dt.weekday()  # Monday is 0, Sunday is 6
+
+        def get_hour(dt):
+            return dt.hour
+
+        df["day"] = df["Date/Time"].map(get_dom)
+        df["weekday"] = df["Date/Time"].map(get_weekday)
+        df["hour"] = df["Date/Time"].map(get_hour)
+
+        # A bar shorter than the row count is a missing value.
+        msno.bar(df)
+        """
+    )
     st.image(images["missing"], width="stretch")
     caption("All four columns are complete. The height of each bar is the number of values present — the same as the number of rows in the file.")
 
@@ -553,6 +606,25 @@ def main():
         "Pickups tend to drop at the weekend. "
         f"The short bars in the histogram are {sunday_bits} — "
         "every Sunday in April, seven days apart."
+    )
+    cell(
+        """
+        # size() counts the rows in each group, which is the pickup count.
+        by_date = df.groupby("day").size()
+
+        # Bins sit on the day numbers 1–30, not between them.
+        plt.hist(df["day"], bins=30, rwidth=0.8, range=(0.5, 30.5))
+        plt.xlabel("Date of the month")
+        plt.ylabel("Frequency")
+
+        # Calendar order keeps the weekly dips in place.
+        plt.plot(by_date.index, by_date.values)
+
+        # Sorting drops the calendar, so the outlier day stands at the right.
+        ordered = by_date.sort_values()
+        plt.bar(range(1, 31), ordered.values)
+        plt.xticks(range(1, 31), ordered.index)
+        """
     )
     st.image(images["dom"], width="stretch")
     caption("Each bar is one calendar day. The repeated short bars are those four Sundays.")
@@ -588,6 +660,15 @@ def main():
         f"A smaller shoulder at 7:00 ({fmt(s['hour_7'])}) and 8:00 ({fmt(s['hour_8'])}) "
         "is the morning commute."
     )
+    cell(
+        """
+        # range centers each bar on the hour, from 0 through 23.
+        plt.hist(df["hour"], bins=24, range=(-0.5, 24), rwidth=0.8)
+        plt.xlabel("Hour of the day")
+        plt.ylabel("Frequency")
+        plt.xticks(range(0, 24))
+        """
+    )
     st.image(images["hour"], width="stretch")
     caption("Twenty-four bars, one per hour. The tallest bar is 17:00, the end of the workday.")
 
@@ -600,6 +681,16 @@ def main():
         "Wednesday also takes some weight off the payday reading of the 30th. "
         "That date falls on a Wednesday, the busiest weekday, so part of its height is the day of the week itself."
     )
+    cell(
+        """
+        labels = "Mon Tue Wed Thu Fri Sat Sun".split()
+
+        plt.hist(df["weekday"], bins=7, rwidth=0.8, range=(-0.5, 6.5))
+        plt.xticks(range(7), labels)
+        plt.xlabel("Day of the week")
+        plt.ylabel("Frequency")
+        """
+    )
     st.image(images["weekday"], width="stretch")
     caption("Monday through Sunday. Wednesday is the tallest bar; Sunday is the shortest.")
 
@@ -608,6 +699,18 @@ def main():
         "Put the hour next to the weekday and the bright cell is the one those two charts already point to: "
         f"<b>{WEEKDAYS_FULL[s['peak_wd']]} at {s['peak_hr']}:00</b>, "
         f"{fmt(s['peak_cross'])} pickups. The heatmap is that crossing, drawn out."
+    )
+    cell(
+        """
+        # Rows stay weekdays. unstack lifts hour into the columns.
+        cross = df.groupby(["weekday", "hour"]).size().unstack()
+
+        heat = sns.heatmap(cross, linewidths=0.5)
+        heat.set_yticklabels(
+            "Lun Mar Mer Jeu Ven Sam Dim".split(),
+            rotation="horizontal",
+        )
+        """
     )
     st.image(images["heatmap"], width="stretch")
     caption("Rows run from Monday (Lun) to Sunday (Dim). Columns are hours 0–23. Lighter cells mean more pickups.")
@@ -619,6 +722,18 @@ def main():
         "Latitude runs from 40.5 to 41, and the main mass sits between about 40.72 and 40.80 — "
         "from downtown up into Midtown. The two separate histograms each show a single peak, "
         "and <code>twiny()</code> places them on one figure so the shapes can be compared."
+    )
+    cell(
+        """
+        # Manhattan is only about 0.2 degrees wide, so the window stays narrow.
+        plt.hist(df["Lon"], bins=100, range=(-74.1, -73.9), color="g", alpha=0.5, label="Longitude")
+        plt.legend(loc="best")
+
+        # A second horizontal axis, so latitude can share the same figure.
+        plt.twiny()
+        plt.hist(df["Lat"], bins=100, range=(40.5, 41), color="r", alpha=0.5, label="Latitude")
+        plt.legend(loc="upper left")
+        """
     )
     left, right = st.columns(2)
     with left:
@@ -636,6 +751,36 @@ def main():
     story(
         "The scatter is the shape of Manhattan, thick from north to south. "
         "The rectangular gap in the middle of the island is Central Park: pickups go around it."
+    )
+    cell(
+        """
+        counts, xedges, yedges = np.histogram2d(
+            df["Lon"],
+            df["Lat"],
+            bins=100,
+            range=[[-74.1, -73.9], [40.5, 41]],
+        )
+        # The busiest bin, then the center of that bin: the red X.
+        bin_x, bin_y = np.unravel_index(counts.argmax(), counts.shape)
+        peak_lon = (xedges[bin_x] + xedges[bin_x + 1]) / 2
+        peak_lat = (yedges[bin_y] + yedges[bin_y + 1]) / 2
+
+        plt.scatter(df["Lon"], df["Lat"], s=0.8, alpha=0.4)
+        plt.scatter(peak_lon, peak_lat, color="red", s=200, marker="x", linewidths=3)
+        plt.xlim(-74.1, -73.8)
+        plt.ylim(40.7, 40.9)
+
+        # Southern tip of the island. Width and height are in degrees.
+        wall_st = patches.Rectangle(
+            (-74.02, 40.700),
+            0.02,
+            0.012,
+            linewidth=2,
+            edgecolor="blue",
+            facecolor="none",
+        )
+        plt.gca().add_patch(wall_st)
+        """
     )
     st.image(images["scatter"], width="stretch")
     caption("Each dot is one pickup. The white rectangle in the middle of the island is Central Park.")
@@ -657,6 +802,16 @@ def main():
         f"At 21:00, {fmt(s['moments']['wed21'])} remain. "
         f"Sunday at 17:00 has {fmt(s['moments']['sun17'])}. "
         f"Wednesday at 05:00 has {fmt(s['moments']['wed5'])}."
+    )
+    cell(
+        """
+        # weekday 2 is Wednesday. Change the hour to draw the other three maps.
+        rush = df[(df["hour"] == 17) & (df["weekday"] == 2)]
+
+        plt.scatter(rush["Lon"], rush["Lat"], s=1, alpha=0.4, color="darkred")
+        plt.xlim(-74.1, -73.8)
+        plt.ylim(40.7, 40.9)
+        """
     )
     top_l, top_r = st.columns(2)
     bot_l, bot_r = st.columns(2)
