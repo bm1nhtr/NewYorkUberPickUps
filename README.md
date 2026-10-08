@@ -4,7 +4,7 @@ A Streamlit page for 564,516 Uber pickups in New York during April 2014. It show
 
 The file `uber-raw-data-apr14.csv` must sit next to `app.py`.
 
-Use **Python 3.11**. The versions in `requirements.txt` are pinned for 3.11. Python 3.12 and later cannot install `numpy==1.24.3`.
+Use **Python 3.11 or newer**. Streamlit Community Cloud currently runs Python 3.14, and these versions install there as well as on 3.11.
 
 ## Run
 

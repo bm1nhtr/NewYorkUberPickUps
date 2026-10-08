@@ -517,8 +517,8 @@ def main():
     cell(
         """
         # Run this cell once, before loading the data or drawing any chart.
-        %pip install streamlit==1.65.0 pandas==2.2.2 numpy==1.24.3 \
-            matplotlib==3.8.4 seaborn==0.13.2 missingno==0.5.2 pydeck==0.9.3
+        %pip install streamlit==1.65.0 pandas==2.3.3 numpy==2.3.5 \
+            matplotlib==3.11.2 seaborn==0.13.2 missingno==0.5.2 pydeck==0.9.3
         """
     )
     caption("From a terminal, the same step is python -m pip install -r requirements.txt.")
